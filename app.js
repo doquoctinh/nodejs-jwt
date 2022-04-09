@@ -6,7 +6,9 @@
  * @requires module:routes
  */
 const swaggerUI = require("swagger-ui-express");
-const swaggerJsDoc = require("swagger-jsdoc"); 
+const yaml = require('js-yaml');
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const { logger } = require('./configuration')
 const createError = require('http-errors');
@@ -22,28 +24,26 @@ const routes = require('./routes')
  */
 const app = express();
 
-const options = {
-	definition: {
-		openapi: "3.0.0",
-		info: {
-			title: "Library API",
-			version: "1.0.0",
-			description: "A simple Express Library API",
-		},
-		servers: [
-			{
-				url: "http://localhost:3000",
-			},
-		],
-	},
-	apis: ["./routes/*.js"],
-};
+/**
+ * Load swagger document
+ */
 
-const specs = swaggerJsDoc(options);
+ const swaggerDocument = yaml.safeLoad(fs.readFileSync(path.join(__dirname, './configuration', 'open-api.yaml'), 'utf8'));
 
-//const app = express();
 
-app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(specs));
+/**
+ * GET home page
+ */
+app.get('/', (req, res) => {
+	logger.debug('GET /');
+	res.redirect('/api-docs');
+});
+
+var swaggerOptions = {
+	defaultModelsExpandDepth: -1,
+}
+
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument, false, swaggerOptions));
 
 process.on('unhandledRejection', (reason) => {
   logger.error(reason);
